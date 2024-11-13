@@ -130,15 +130,13 @@ def main():
                    120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200, 205, 210, 215,
                    220, 225, 230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310, 315,
                    320, 325, 330, 335, 340, 345, 350]
-    k_values = list(range(0, 100, 10))  # Test values for k
-
     for size in input_sizes:
         arr = [random.randint(0, 100000) for _ in range(size)]
 
         insertion_time = measure_time(insertionSort, arr)
         merge_time = measure_time(mergeSort, arr, merge=True)
 
-        for k in k_values:
+        for k in range(0, 110, 10):
             hybrid_merge_time = measure_time(hybrid_merge_sort, arr, k=k, hybrid=True)
 
             results.append({
@@ -152,7 +150,7 @@ def main():
     df = pd.DataFrame(results)
     df.to_csv("hybrid_merge_sort_comparison.csv", index=False)
 
-    for k in k_values:
+    for k in range(0, 110, 10):
         subset = df[df["k"] == k]
 
         plt.figure(figsize=(10, 6))
