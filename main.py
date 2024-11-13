@@ -82,11 +82,43 @@ def insertionSort(arr):
         arr[j + 1] = key  # Insert the key in the correct position
 
 
-def measure_time(sort_function, arr, merge=False):
+#Using my solution for the hybrid merge sort from when I took CSE 331
+def hybrid_merge_sort(arr, threshold: int = 40):
+    """
+    Performs an insertion sort on a list when the length of the list is less than the threshold and if it's greater
+    than the threshold, performs a selection sort on the list.
+
+    :param threshold: K value to start using Insertion Sort
+    :param arr: list of data to be sorted
+    :return: None
+    """
+    data_len = len(arr)
+    if data_len > threshold:
+        if data_len < 2:
+            return
+        mid = data_len // 2
+        left_list = arr[:mid]
+        right_list = arr[mid:]
+        hybrid_merge_sort(left_list)
+        hybrid_merge_sort(right_list)
+        i = j = 0
+        while i + j < len(arr):
+            if j == len(right_list) or (i < len(left_list) and left_list[i] < right_list[j]):
+                arr[i + j] = left_list[i]
+                i += 1
+            else:
+                arr[i + j] = right_list[j]
+                j += 1
+    else:
+        insertionSort(arr)
+
+def measure_time(sort_function, arr, merge=False, k=0, hybrid=False):
     start_time = timeit.default_timer()
     for i in range(100):
         if merge:
             sort_function(arr.copy(), 0, len(arr) - 1)
+        elif hybrid:
+            sort_function(arr.copy(), k)
         else:
             sort_function(arr.copy())
     return (timeit.default_timer() - start_time) / 100
@@ -94,37 +126,51 @@ def measure_time(sort_function, arr, merge=False):
 
 def main():
     results = []
-    input_sizes = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
-                   125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200, 205, 210, 215, 220,
-                   225, 230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310, 315, 320,
-                   325, 330, 335, 340, 345, 350]
+    input_sizes = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115,
+                   120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200, 205, 210, 215,
+                   220, 225, 230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310, 315,
+                   320, 325, 330, 335, 340, 345, 350]
+    k_values = list(range(0, 100, 10))  # Test values for k
 
     for size in input_sizes:
-        arr = []
-        for i in range(size):
-            arr.append(random.randint(0, 100000))
+        arr = [random.randint(0, 100000) for _ in range(size)]
 
         insertion_time = measure_time(insertionSort, arr)
-
         merge_time = measure_time(mergeSort, arr, merge=True)
 
-        results.append({"Input Size": size, "Insertion Sort Time": round(insertion_time, 10), "Merge Sort Time": round(merge_time, 10)})
+        for k in k_values:
+            hybrid_merge_time = measure_time(hybrid_merge_sort, arr, k=k, hybrid=True)
+
+            results.append({
+                "Input Size": size,
+                "k": k,
+                "Hybrid Merge Sort Time": hybrid_merge_time,
+                "Merge Sort Time": merge_time,
+                "Insertion Sort Time": insertion_time
+            })
 
     df = pd.DataFrame(results)
-    df.to_csv("sort_times.csv", index=False)
+    df.to_csv("hybrid_merge_sort_comparison.csv", index=False)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(df["Input Size"], df["Insertion Sort Time"], label="Insertion Sort Time", marker="o")
-    plt.plot(df["Input Size"], df["Merge Sort Time"], label="Merge Sort Time", marker="o")
-    plt.xlabel("Input Size (n)")
-    plt.ylabel("Time (seconds)")
-    plt.title("Comparison of Insertion Sort and Merge Sort Times")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig("sort_comparison_plot.png")
+    for k in k_values:
+        subset = df[df["k"] == k]
 
-    plt.show()
+        plt.figure(figsize=(10, 6))
+        plt.plot(subset["Input Size"], subset["Hybrid Merge Sort Time"], label=f"Hybrid Merge Sort Time (k={k})",
+                 marker="o")
+
+        plt.plot(subset["Input Size"], subset["Merge Sort Time"], label="Merge Sort Time", marker="x", linestyle="--")
+        plt.plot(subset["Input Size"], subset["Insertion Sort Time"], label="Insertion Sort Time", marker="x",
+                 linestyle="--")
+
+        plt.xlabel("Input Size (n)")
+        plt.ylabel("Time (seconds)")
+        plt.title(f"Comparison of Hybrid Merge Sort (k={k}), Merge Sort, and Insertion Sort Times")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(f"hybrid_merge_sort_comparison_k{k}.png")
+        plt.show()
+
 
 if __name__ == '__main__':
     main()
-
